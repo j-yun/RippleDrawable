@@ -18,8 +18,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -151,6 +151,10 @@ public class RippleDrawable extends LayerDrawable {
     /** Whether bounds are being overridden. */
     private boolean mOverrideBounds;
 
+    private float mTouchUpAcceleration = Ripple.WAVE_TOUCH_UP_ACCELERATION;
+    private float mTouchDownAcceleration = Ripple.WAVE_TOUCH_DOWN_ACCELERATION;
+    private long mRippleEnterDelay = Ripple.RIPPLE_ENTER_DELAY;
+
     /**
      * Constructor used for drawable inflation.
      */
@@ -185,6 +189,18 @@ public class RippleDrawable extends LayerDrawable {
         setColor(color);
         ensurePadding();
         initializeFromState();
+    }
+
+    public void setTouchUpAcceleration(float touchUpAcceleration) {
+        this.mTouchUpAcceleration = touchUpAcceleration;
+    }
+
+    public void setTouchDownAcceleration(float touchDownAcceleration) {
+        this.mTouchDownAcceleration = touchDownAcceleration;
+    }
+
+    public void setRippleEnterDelay(long rippleEnterDelay) {
+        this.mRippleEnterDelay = rippleEnterDelay;
     }
 
     @Override
@@ -506,6 +522,9 @@ public class RippleDrawable extends LayerDrawable {
                 y = mHotspotBounds.exactCenterY();
             }
             mRipple = new Ripple(this, mHotspotBounds, x, y);
+            mRipple.setTouchDownAcceleration(mTouchDownAcceleration);
+            mRipple.setTouchUpAcceleration(mTouchUpAcceleration);
+            mRipple.setRippleEnterDelay(mRippleEnterDelay);
         }
 
         mRipple.setup(mState.mMaxRadius, mDensity);
@@ -608,7 +627,8 @@ public class RippleDrawable extends LayerDrawable {
         // Clip to the dirty bounds, which will be the drawable bounds if we
         // have a mask or content and the ripple bounds if we're projecting.
         final Rect bounds = getDirtyBounds();
-        final int saveCount = canvas.save(Canvas.CLIP_SAVE_FLAG);
+        //final int saveCount = canvas.save(Canvas.ALL_SAVE_FLAG);
+        final int saveCount = canvas.save();
         canvas.clipRect(bounds);
 
         drawContent(canvas);

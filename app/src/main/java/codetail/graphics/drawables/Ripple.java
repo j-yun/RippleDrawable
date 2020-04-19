@@ -16,12 +16,19 @@ class Ripple {
     private static final TimeInterpolator LINEAR_INTERPOLATOR = new LinearInterpolator();
     private static final TimeInterpolator DECEL_INTERPOLATOR = new LogInterpolator();
 
-    private static final float GLOBAL_SPEED = 1.0f;
-    private static final float WAVE_TOUCH_DOWN_ACCELERATION = 1024.0f * GLOBAL_SPEED;
-    private static final float WAVE_TOUCH_UP_ACCELERATION = 3400.0f * GLOBAL_SPEED;
+    static final float GLOBAL_SPEED = 1.0f;
+    static final float WAVE_TOUCH_DOWN_ACCELERATION = 1024.0f * GLOBAL_SPEED;
+    static final float WAVE_TOUCH_DOWN_ACCELERATION_FAST = 2048.0f * GLOBAL_SPEED;
+    static final float WAVE_TOUCH_DOWN_ACCELERATION_VERY_FAST = 3096.0f * GLOBAL_SPEED;
+    static final float WAVE_TOUCH_UP_ACCELERATION = 3400.0f * GLOBAL_SPEED;
+    static final float WAVE_TOUCH_UP_ACCELERATION_SLOW = 2048.0f * GLOBAL_SPEED;
+    static final float WAVE_TOUCH_UP_ACCELERATION_VERY_SLOW = 1024.0f * GLOBAL_SPEED;
+
     private static final float WAVE_OPACITY_DECAY_VELOCITY = 3.0f / GLOBAL_SPEED;
 
-    private static final long RIPPLE_ENTER_DELAY = 80;
+    static final long RIPPLE_ENTER_DELAY = 80;
+    static final long RIPPLE_ENTER_DELAY_VERY_SHORT = 10;
+    static final long RIPPLE_ENTER_DELAY_IMMEDIATELY = 0;
 
     private final RippleDrawable mOwner;
 
@@ -63,6 +70,10 @@ class Ripple {
 
     /** Whether we were canceled externally and should avoid self-removal. */
     private boolean mCanceled;
+
+    private float mTouchUpAcceleration = WAVE_TOUCH_UP_ACCELERATION;
+    private float mTouchDownAcceleration = WAVE_TOUCH_DOWN_ACCELERATION;
+    private long mRippleEnterDelay = RIPPLE_ENTER_DELAY;
 
     /**
      * Creates a new ripple.
@@ -161,6 +172,18 @@ class Ripple {
         return mTweenY;
     }
 
+    public void setTouchDownAcceleration(float touchDownAcceleration) {
+        this.mTouchDownAcceleration = touchDownAcceleration;
+    }
+
+    public void setRippleEnterDelay(long rippleEnterDelay) {
+        this.mRippleEnterDelay = rippleEnterDelay;
+    }
+
+    public void setTouchUpAcceleration(float touchUpAcceleration) {
+        this.mTouchUpAcceleration = touchUpAcceleration;
+    }
+
     /**
      * Draws the ripple centered at (0,0) using the specified paint.
      */
@@ -211,22 +234,22 @@ class Ripple {
         cancel();
 
         final int radiusDuration = (int)
-                (1000 * Math.sqrt(mOuterRadius / WAVE_TOUCH_DOWN_ACCELERATION * mDensity) + 0.5);
+                (1000 * Math.sqrt(mOuterRadius / mTouchDownAcceleration * mDensity) + 0.5);
 
         final ObjectAnimator radius = ObjectAnimator.ofFloat(this, "radiusGravity", 1);
         radius.setDuration(radiusDuration);
         radius.setInterpolator(LINEAR_INTERPOLATOR);
-        radius.setStartDelay(RIPPLE_ENTER_DELAY);
+        radius.setStartDelay(mRippleEnterDelay);
 
         final ObjectAnimator cX = ObjectAnimator.ofFloat(this, "xGravity", 1);
         cX.setDuration(radiusDuration);
         cX.setInterpolator(LINEAR_INTERPOLATOR);
-        cX.setStartDelay(RIPPLE_ENTER_DELAY);
+        cX.setStartDelay(mRippleEnterDelay);
 
         final ObjectAnimator cY = ObjectAnimator.ofFloat(this, "yGravity", 1);
         cY.setDuration(radiusDuration);
         cY.setInterpolator(LINEAR_INTERPOLATOR);
-        cY.setStartDelay(RIPPLE_ENTER_DELAY);
+        cY.setStartDelay(mRippleEnterDelay);
 
         mAnimRadius = radius;
         mAnimX = cX;
@@ -258,8 +281,7 @@ class Ripple {
 
         cancel();
 
-        final int radiusDuration = (int) (1000 * Math.sqrt(remaining / (WAVE_TOUCH_UP_ACCELERATION
-                + WAVE_TOUCH_DOWN_ACCELERATION) * mDensity) + 0.5);
+        final int radiusDuration = (int) (1000 * Math.sqrt(remaining / (mTouchUpAcceleration + mTouchDownAcceleration) * mDensity) + 0.5);
         final int opacityDuration = (int) (1000 * mOpacity / WAVE_OPACITY_DECAY_VELOCITY + 0.5f);
 
         exitSoftware(radiusDuration, opacityDuration);
